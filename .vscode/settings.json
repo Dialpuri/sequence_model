@@ -1,0 +1,21 @@
+{
+    "python.linting.enabled": true,
+    "python.pythonPath": "${workspaceFolder}/pyenv/bin/python3",
+    "editor.formatOnSave": true,
+    "python.linting.pep8Enabled": true,
+    "python.linting.pylintPath": "pylint",
+    "python.linting.pylintArgs": [
+        "--extension-pkg-whitelist=gemmi"
+    ],
+    "python.linting.pylintEnabled": true,
+    "python.linting.pep8Args": [
+        "--ignore=E501"
+    ],
+    "files.exclude": {
+        "**/*.pyc": true
+    },
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.autopep8"
+    },
+    "python.formatting.provider": "none"
+}

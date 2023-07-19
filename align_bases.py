@@ -8,7 +8,29 @@ from dataclasses import dataclass
 class Params: 
     shape: int = 32
 
-
+base_atoms = [
+        "C1",
+        "C2",
+        "C3",
+        "C4",
+        "C5",
+        "C6",
+        "C7",
+        "C8",
+        "N1",
+        "N2",
+        "N3",
+        "N4",
+        "N5",
+        "N6",
+        "N7",
+        "N8",
+        "N9",
+        "O2",
+        "O4",
+        "O6"]
+base_types = ['U', 'C', 'G', 'A', 'DA', 'DT', 'DG', 'DC']
+    
 def _get_base_plane(residue: gemmi.Residue) -> np.matrix:
         
     position_list: List[np.array] = []
@@ -119,14 +141,17 @@ def get_rotation_matrix(plane: np.matrix) -> gemmi.Mat33:
         [-u2 * sin_phi                      , u1 * sin_phi                      ,      cos_phi  ],
     ])
     
-    # return np.matrix(out)
-    return gemmi.Mat33(out)
+    return np.matrix(out)
+    # return gemmi.Mat33(out)
      
-def get_res_midpoint(residue: gemmi.Residue) -> gemmi.Position:
+def get_res_start(residue: gemmi.Residue, shape = Params.shape) -> gemmi.Position:
     info = gemmi.find_tabulated_residue(residue.name)
     
-    shift = gemmi.Position((Params.shape/2), (Params.shape/2), (Params.shape/2))
+    shift = gemmi.Position((shape/2), (shape/2), (shape/2))
+    base_types = ['U', 'C', 'G', 'A', 'DA', 'DT', 'DG', 'DC']
     
+    print(residue)
+
     if info.kind in (gemmi.ResidueInfoKind.RNA, gemmi.ResidueInfoKind.DNA):
         if residue.name not in base_types:
             return None
@@ -141,6 +166,7 @@ def get_res_midpoint(residue: gemmi.Residue) -> gemmi.Position:
 
         base_midpoint = base_midpoint / base_atom_count     
         return (base_midpoint-shift)
+        # return base_midpoint
 
 
 
@@ -155,7 +181,7 @@ def calculate_density():
     residue = structure[0][0][0]
     plane, position_list = get_base_plane(residue=residue)
     rotation = get_rotation_matrix(plane)
-    position = get_res_midpoint(residue)
+    position = get_res_start(residue)
 
     transform = gemmi.Transform(rotation, gemmi.Vec3(0,0,0))
 
@@ -206,7 +232,7 @@ def main():
 
     plane, position_list = get_base_plane(residue=residue)
     rotation = get_rotation_matrix(plane)
-    translation = get_res_midpoint(residue)
+    translation = get_res_start(residue)
     
     scale = gemmi.Mat33([[grid_spacing, 0, 0], [0, grid_spacing, 0], [0, 0, grid_spacing]])
     transform = gemmi.Transform(scale.multiply(rotation), translation)
