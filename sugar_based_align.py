@@ -55,12 +55,10 @@ def align_residue(src_residue: gemmi.Residue, tgt_residue: gemmi.Residue, add_sp
 
     transform = gemmi.superpose_positions(tgt_pos, src_pos).transform
 
-    if not add_space:
-        return transform
+    if add_space:
+        return gemmi.Transform(transform.mat, transform.vec - gemmi.Vec3(*constants.base_shift()) + gemmi.Vec3(8,8,8))
+    return transform
 
-    shifted_transform  = gemmi.Transform(transform.mat, transform.vec + gemmi.Vec3(*constants.base_shift()))
-    
-    return shifted_transform
     # return gemmi.superpose_positions(
     #     [a.pos for a in tgt_residue if a.name in align_atoms],
     #     [a.pos for a in src_residue if a.name in align_atoms]).transform
@@ -103,6 +101,7 @@ def calculate_sugar_middlepoint(residue: gemmi.Residue,
 
     if position_count:
         return position_sum / position_count
+    
     raise RuntimeError("Residue contains no sugar atoms")
 
 
@@ -151,12 +150,15 @@ def superimpose_residues() -> Tuple[gemmi.Structure, gemmi.Residue]:
             if residue.name not in base_types:
                 continue
 
-            transform = align_residue(residue, src_residue)
+            transform = align_residue(residue, src_residue, False)
             tranformed_residue = apply_transform(residue, transform)
             out_chain.add_residue(tranformed_residue)
 
     out_model.add_chain(out_chain)
     out_structure.add_model(out_model)
+    
+    print(src_residue[0])
+    
     return out_structure, src_residue
 
 
