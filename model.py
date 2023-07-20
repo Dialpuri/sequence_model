@@ -14,7 +14,7 @@ def cnn():
     inputs = x = tf.keras.Input(shape=(16, 16, 16, 1))
     x = tf.keras.layers.Conv3D(filters=16, kernel_size=3, activation="relu")(inputs)
     x = tf.keras.layers.MaxPool3D(pool_size=2)(x)
-    x = tf.keras. layers.BatchNormalization()(x)
+    x = tf.keras.layers.BatchNormalization()(x)
 
     x = tf.keras.layers.Conv3D(filters=32, kernel_size=3, activation="relu")(x)
     x = tf.keras.layers.MaxPool3D(pool_size=2)(x)
@@ -28,13 +28,42 @@ def cnn():
     # x = tf.keras.layers.MaxPool3D(pool_size=2)(x)
     # x = tf.keras.layers.BatchNormalization()(x)
 
-    x = tf.keras.layers.GlobalAveragePooling3D()(x)
+    # x = tf.keras.layers.GlobalAveragePooling3D()(x)
+    x = tf.keras.layers.Flatten()(x)
     x = tf.keras.layers.Dense(units=64, activation="relu")(x)
     x = tf.keras.layers.Dropout(0.3)(x)
 
-    outputs = tf.keras.layers.Dense(units=2, activation="sigmoid")(x)
+    outputs = tf.keras.layers.Dense(units=2, activation="softmax")(x)
     model = tf.keras.Model(inputs, outputs, name="3dcnn")
     return model
+
+def cnn_full():
+    inputs = x = tf.keras.Input(shape=(16, 16, 16, 1))
+    x = tf.keras.layers.Conv3D(filters=16, kernel_size=3, activation="relu")(inputs)
+    x = tf.keras.layers.MaxPool3D(pool_size=2)(x)
+    x = tf.keras.layers.BatchNormalization()(x)
+
+    x = tf.keras.layers.Conv3D(filters=32, kernel_size=3, activation="relu")(x)
+    x = tf.keras.layers.MaxPool3D(pool_size=2)(x)
+    x = tf.keras.layers.BatchNormalization()(x)
+
+    # x = tf.keras.layers.Conv3D(filters=64, kernel_size=3, activation="relu")(x)
+    # x = tf.keras.layers.MaxPool3D(pool_size=2)(x)
+    # x = tf.keras.layers.BatchNormalization()(x)
+
+    # x = tf.keras.layers.Conv3D(filters=8, kernel_size=3, activation="relu")(x)
+    # x = tf.keras.layers.MaxPool3D(pool_size=2)(x)
+    # x = tf.keras.layers.BatchNormalization()(x)
+
+    # x = tf.keras.layers.GlobalAveragePooling3D()(x)
+    x = tf.keras.layers.Flatten()(x)
+    x = tf.keras.layers.Dense(units=64, activation="relu")(x)
+    x = tf.keras.layers.Dropout(0.3)(x)
+
+    outputs = tf.keras.layers.Dense(units=5, activation="softmax")(x)
+    model = tf.keras.Model(inputs, outputs, name="3dcnn")
+    return model
+
 
 def t_model():
     inputs = x = tf.keras.Input(shape=(8, 8, 8, 1))

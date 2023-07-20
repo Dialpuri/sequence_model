@@ -1,5 +1,5 @@
 import json
-from typing import List
+from typing import List, Dict
 
 import gemmi
 
@@ -63,3 +63,22 @@ def alignment_atoms(residue_name: str) -> List[str]:
 
 def base_types() -> List[str]:
     return ['U', 'C', 'G', 'A', 'DA', 'DT', 'DG', 'DC']
+
+
+def base_groups() -> Dict[str, List[int]]:
+    return {
+        'U': [1, 0], 'C': [1, 0], 'G': [0, 1], 'A': [0, 1], 'DA': [0, 1], 'DT': [1, 0], 'DG': [0, 1], 'DC': [1, 0]
+    }
+
+
+def base_groups_full() -> Dict[str, List[int]]:
+    return {
+        'U': [1, 0, 0, 0, 0],
+        'C': [0, 1, 0, 0, 0],
+        'DC': [0, 1, 0, 0, 0],
+        'G': [0, 0, 1, 0, 0],
+        'DG': [0, 0, 1, 0, 0],
+        'A': [0, 0, 0, 1, 0],
+        'DA': [0, 0, 0, 1, 0],
+        'DT': [0, 0, 0, 0, 1],
+    }

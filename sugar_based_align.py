@@ -3,11 +3,14 @@ Sugar Based Alignment - Jordan Dialpuri Began 19/07/23
 """
 
 import json
+import math
+import os
 from typing import List, Tuple
-
+import random
 import gemmi
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 
 import constants
 
@@ -39,7 +42,7 @@ def align_residue(src_residue: gemmi.Residue, tgt_residue: gemmi.Residue, add_sp
 
     # align_atoms = constants.alignment_atoms(src_residue.name)
     align_atoms = list(set(constants.sugar_atoms() +
-                       constants.alignment_atoms(src_residue.name)))
+                           constants.alignment_atoms(src_residue.name)))
 
     tgt_pos = []
     src_pos = []
@@ -51,12 +54,13 @@ def align_residue(src_residue: gemmi.Residue, tgt_residue: gemmi.Residue, add_sp
                 tgt_pos.append(atom.pos)
                 src_pos.append(src_atom.pos)
 
-    assert len(align_atoms) == len(tgt_pos) == len(src_pos)
+    if not len(align_atoms) == len(tgt_pos) == len(src_pos):
+        return None
 
     transform = gemmi.superpose_positions(tgt_pos, src_pos).transform
 
     if add_space:
-        return gemmi.Transform(transform.mat, transform.vec - gemmi.Vec3(*constants.base_shift()) + gemmi.Vec3(8,8,8))
+        return gemmi.Transform(transform.mat, transform.vec - gemmi.Vec3(*constants.base_shift()) + gemmi.Vec3(8, 8, 8))
     return transform
 
     # return gemmi.superpose_positions(
@@ -101,7 +105,7 @@ def calculate_sugar_middlepoint(residue: gemmi.Residue,
 
     if position_count:
         return position_sum / position_count
-    
+
     raise RuntimeError("Residue contains no sugar atoms")
 
 
@@ -132,10 +136,10 @@ def superimpose_residues() -> Tuple[gemmi.Structure, gemmi.Residue]:
         src_residue, only_alignment_atoms=False)
 
     box_offset = gemmi.Position(
-        constants.shape()/2, constants.shape()/2, constants.shape()/2)
+        constants.shape() / 2, constants.shape() / 2, constants.shape() / 2)
 
     align_to_origin = gemmi.Transform(gemmi.Mat33(
-        [[1, 0, 0], [0, 1, 0], [0, 0, 1]]), -sugar_midpoint+box_offset)
+        [[1, 0, 0], [0, 1, 0], [0, 0, 1]]), -sugar_midpoint + box_offset)
 
     src_residue = apply_transform(src_residue, align_to_origin)
 
@@ -156,9 +160,9 @@ def superimpose_residues() -> Tuple[gemmi.Structure, gemmi.Residue]:
 
     out_model.add_chain(out_chain)
     out_structure.add_model(out_model)
-    
-    print(src_residue[0])
-    
+
+    # print(src_residue[0])
+
     return out_structure, src_residue
 
 
@@ -211,37 +215,16 @@ def base_in_density(threshold: float, grid: gemmi.FloatGrid, residue: gemmi.Resi
         # print(score, threshold, score > threshold)
         return score > threshold
 
-    raise RuntimeError("Density count > 0")
+    return False
+    # raise RuntimeError("Density count <= 0", density_count)
 
 
-def calculate_interpolated_box(reference_residue: gemmi.Residue, data_file: str) -> None:
+def calculate_interpolated_boxes(reference_residue: gemmi.Residue) -> np.ndarray:
     """Calculate interpolated box for residue"""
     structure, grid = load_data("1hr2")
 
-    data = None
-    with open(data_file, 'r', encoding='UTF-8') as in_file:
-        data = json.load(in_file)
-
-    if not data:
-        return
-
     shape = constants.shape()
-
-    base_center = gemmi.Vec3(*data["average_base_point"])
-
-    box_offset = gemmi.Vec3(shape/2, shape/2, shape/2)
-
     base_types = constants.base_types()
-
-    # grid_transform: gemmi.Transform = gemmi.Transform()
-    # grid_transform.mat.fromlist([[grid_spacing, 0, 0], [0, grid_spacing, 0], [0, 0, grid_spacing]])
-    # grid_transform.vec.fromlist([-shape/2, -shape/2, shape/2])
-
-    box = None
-
-    out_structure = gemmi.Structure()
-    out_model = gemmi.Model("A")
-    out_chain = gemmi.Chain("A")
 
     for chain in structure[0]:
         for n, residue in enumerate(chain[2:10]):
@@ -255,55 +238,37 @@ def calculate_interpolated_box(reference_residue: gemmi.Residue, data_file: str)
             if not base_in_density(2, grid, residue):
                 continue
 
-            print(residue)
             transform = align_residue(residue, reference_residue, True)
-            out_chain.add_residue(apply_transform(residue, transform))
-
-            # scale = gemmi.Mat33([0.7,])
-            # transform_to_base_center = gemmi.Transform(transform.mat, (transform.vec-box_offset))
-            # # transform_to_base_center = _combine_transforms(grid_transform, transform_to_base_center)
-
             box = np.zeros((shape, shape, shape), dtype=np.float32)
             grid.interpolate_values(box, transform.inverse())
 
-            # print(transform_to_base_center.inverse().mat, transform_to_base_center.inverse().vec)
 
-            # grid.interpolate_values(box, transform_to_base_center.inverse())
+def calculate_train_test_set():
+    pdb_dir = "data/pdb_files"
 
-            out_grid = gemmi.FloatGrid(
-                box, gemmi.UnitCell(shape, shape, shape, 90, 90, 90))
-            ccp4 = gemmi.Ccp4Map()
-            ccp4.grid = out_grid
-            ccp4.grid.unit_cell = out_grid.unit_cell
-            ccp4.grid.spacegroup = gemmi.SpaceGroup("P1")
-            ccp4.update_ccp4_header()
-            ccp4.write_ccp4_map(
-                f"tests/interpolation_test/test_{n}_{residue.seqid.num}_{residue.name}.map")
+    file_list = os.listdir(pdb_dir)
+    test_train_split = 0.2
 
-        break
-    out_model.add_chain(out_chain)
-    out_structure.add_model(out_model)
+    random.shuffle(file_list)
 
-    out_structure.write_pdb("tests/transformed_residues/1hr2_trans2.pdb")
+    split_index = math.ceil(0.2 * len(file_list))
 
-    # fig = plt.figure()
-    # ax = fig.add_subplot(projection='3d')
+    train = [x[3:-4] for x in file_list[split_index:]]
+    test = [x[3:-4] for x in file_list[:split_index]]
 
-    # X,Y,Z = np.meshgrid(
-    #     np.arange(0, shape)*grid_spacing,
-    #     np.arange(0, shape)*grid_spacing,
-    #     np.arange(0, shape)*grid_spacing,
-    # )
+    train_df = pd.DataFrame(train, columns=["PDB"])
+    test_df = pd.DataFrame(test, columns=["PDB"])
 
-    # box[box<0.7] = 0
+    train_df.to_csv("data/train.csv", index=False)
+    test_df.to_csv("data/test.csv", index=False)
 
-    # ax.scatter(X,Y,Z, s = 20*box, c = box, alpha=0.5, depthshade=False)
-
-    # plt.show()
+    # print(len(file_list), len(train), len(test), "=", len(train)+len(test))
 
 
 if __name__ == "__main__":
-    s, r = superimpose_residues()
-    calculate_average_midpoint(s, r, "data/average_data.json")
+    calculate_train_test_set()
 
-    calculate_interpolated_box(r, "data/average_data.json")
+    # s, r = superimpose_residues()
+    # calculate_average_midpoint(s, r, "data/average_data.json")
+    #
+    # calculate_interpolated_box(r)
