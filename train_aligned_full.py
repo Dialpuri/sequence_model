@@ -15,11 +15,12 @@ import constants
 
 @dataclass
 class Params:
-    dataset_base_dir: str = "dataset"
-    datasets = {"train": "data/train.csv", "test": "data/test.csv"}
+    dataset_base_dir: str = "large_dataset"
+    datasets = {"train": "large_dataset/train.csv", "test": "large_dataset/test.csv"}
     shape: int = 16
-    pdb_path: str = "data/pdb_files"
-    map_path: str = "data/map_files"
+    pdb_path: str = "large_dataset/pdb_files"
+    map_path: str = "large_dataset/map_files"
+    mtz_path: str = "large_dataset/mtz_files"
 
 def generator_full(dataset: str):
     df = pd.read_csv(Params.datasets[dataset])
@@ -27,8 +28,13 @@ def generator_full(dataset: str):
     base_groups = constants.base_groups_full()
 
     for pdb_code in df["PDB"]:
-        structure = gemmi.read_structure(os.path.join(Params.pdb_path, f"pdb{pdb_code}.ent"))
-        grid = gemmi.read_ccp4_map(os.path.join(Params.map_path, f"{pdb_code}.map")).grid
+        structure = gemmi.read_structure(os.path.join(Params.pdb_path, f"{pdb_code}.pdb"))
+        # grid = gemmi.read_ccp4_map(os.path.join(Params.map_path, f"{pdb_code}.map")).grid
+        try:
+            mtz = gemmi.read_mtz_file(os.path.join(Params.mtz_path, f"{pdb_code}.mtz"))
+            grid = mtz.transform_f_phi_to_map("FWT", "PHWT")
+        except RuntimeError:
+            continue
         grid.normalize()
 
         for chain in structure[0]:
@@ -104,7 +110,7 @@ def train():
     batch_size: int = 8
     steps_per_epoch: int = 1000
     validation_steps: int = 1000
-    name: str = "categorical_model1"
+    name: str = "categorical_model2"
 
     weight_path: str = f"models/{name}.best.hdf5"
 

@@ -15,17 +15,17 @@ import constants
 
 @dataclass
 class Params:
-    dataset_base_dir: str = "dataset"
-    datasets = {"train": "data/train.csv", "test": "data/test.csv"}
+    dataset_base_dir: str = "large_dataset"
+    datasets = {"train": "large_dataset/train.csv", "test": "large_dataset/test.csv"}
     shape: int = 16
-    pdb_path: str = "data/pdb_files"
-    map_path: str = "data/map_files"
-    mtz_path: str = "data/mtz_files"
+    pdb_path: str = "large_dataset/pdb_files"
+    map_path: str = "large_dataset/map_files"
+    mtz_path: str = "large_dataset/mtz_files"
 
 
 def generator(pdb_code: str):
 
-    structure = gemmi.read_structure(os.path.join(Params.pdb_path, f"pdb{pdb_code}.ent"))
+    structure = gemmi.read_structure(os.path.join(Params.pdb_path, f"{pdb_code}.pdb"))
     mtz = gemmi.read_mtz_file(os.path.join(Params.mtz_path, f"{pdb_code}_phases.mtz"))
     grid = mtz.transform_f_phi_to_map("FWT", "PHWT")
 
@@ -63,7 +63,7 @@ def generator(pdb_code: str):
 
 def predict():
     model = tf.keras.models.load_model(
-        "models/categorical_model1.best.hdf5",
+        "models/categorical_model2.best.hdf5",
         compile=False,
     )
 

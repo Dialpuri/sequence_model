@@ -244,7 +244,7 @@ def calculate_interpolated_boxes(reference_residue: gemmi.Residue) -> np.ndarray
 
 
 def calculate_train_test_set():
-    pdb_dir = "data/pdb_files"
+    pdb_dir = "large_dataset/pdb_files"
 
     file_list = os.listdir(pdb_dir)
     test_train_split = 0.2
@@ -253,14 +253,14 @@ def calculate_train_test_set():
 
     split_index = math.ceil(0.2 * len(file_list))
 
-    train = [x[3:-4] for x in file_list[split_index:]]
-    test = [x[3:-4] for x in file_list[:split_index]]
+    train = [x[:-4] for x in file_list[split_index:]]
+    test = [x[:-4] for x in file_list[:split_index]]
 
     train_df = pd.DataFrame(train, columns=["PDB"])
     test_df = pd.DataFrame(test, columns=["PDB"])
 
-    train_df.to_csv("data/train.csv", index=False)
-    test_df.to_csv("data/test.csv", index=False)
+    train_df.to_csv("large_dataset/train.csv", index=False)
+    test_df.to_csv("large_dataset/test.csv", index=False)
 
     # print(len(file_list), len(train), len(test), "=", len(train)+len(test))
 

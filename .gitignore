@@ -1,0 +1,14 @@
+dataset
+dataset copy
+models
+pyenv
+__pycache__
+.idea
+.vscode
+data
+large_dataset
+logs
+tests
+isolated
+test*
+*.png
