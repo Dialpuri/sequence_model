@@ -10,5 +10,5 @@ large_dataset
 logs
 tests
 isolated
-test*
+test_*
 *.png

@@ -112,4 +112,4 @@ def t_model():
     return tf.keras.Model(inputs, x)
 
 if __name__ == "__main__":
-    t_model().summary()
+    cnn_full().summary()
